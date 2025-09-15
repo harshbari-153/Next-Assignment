@@ -18,7 +18,7 @@ from my_etl_module import (
     find_latest_headline_and_url,
     get_body,
     get_metadata,
-    add_to_database,
+    add_to_database
 )
 
 with DAG(
