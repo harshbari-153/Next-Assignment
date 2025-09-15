@@ -1,11 +1,5 @@
-import requests
-from bs4 import BeautifulSoup
-import google.generativeai as genai
-import json
-import psycopg2
-import os
-from psycopg2.extras import execute_values
-from dotenv import load_dotenv
+
+#from dotenv import load_dotenv
 
 #################################################
 def find_latest_headline_and_url(API: str):
