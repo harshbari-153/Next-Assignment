@@ -14,7 +14,8 @@ from psycopg2.extras import execute_values
 from airflow.models.dag import DAG
 from airflow.decorators import task
 
-from include.my_etl_module import (
+# from include.my_etl_module import (
+from my_etl_module import (
     find_latest_headline_and_url,
     get_body,
     get_metadata,
