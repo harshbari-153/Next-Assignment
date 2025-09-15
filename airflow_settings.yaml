@@ -1,0 +1,9 @@
+airflow:
+  connections:
+    - conn_id: postgres_conn
+      conn_uri: $PostgreSQL_API
+  variables:
+    - variable_name: GNews_API
+      variable_value: $GNews_API
+    - variable_name: Gemini_API
+      variable_value: $Gemini_API
