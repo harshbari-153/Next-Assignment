@@ -65,4 +65,5 @@ def start_etl():
 
 
 # Initiate ETL
-dag_instance = start_etl()
+dag = start_etl()
+
