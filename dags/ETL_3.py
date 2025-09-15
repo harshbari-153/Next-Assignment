@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pendulum
 import os # Import the os module
+from dotenv import load_dotenv
 
 from airflow.models.dag import DAG
 from airflow.decorators import task
