@@ -32,7 +32,7 @@ import requests
     schedule="@daily",
     doc_md=__doc__,
     default_args={"owner": "Astro", "retries": 3},
-    tags=["example"],
+    tags=["example", "tea"],
 )
 def example_astronauts():
     # Define tasks
