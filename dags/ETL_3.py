@@ -36,8 +36,8 @@ with DAG(
         This single task combines multiple steps for better performance and data passing.
         """
         # Read the environment variables using os.environ
-        gnews_api = os.environ.get("GNews_API")
-        gemini_api = os.environ.get("Gemini_API")
+        gnews_api = os.environ.get("GNEWS_API")
+        gemini_api = os.environ.get("GEMINI_API")
         
         news_list = find_latest_headline_and_url(gnews_api)
         news_list = get_body(news_list)
@@ -51,7 +51,7 @@ with DAG(
         Loads the processed news data into the database.
         """
         # Read the environment variable for the database connection URI
-        postgres_api = os.environ.get("PostgreSQL_API")
+        postgres_api = os.environ.get("POSTGRESQL_API")
         add_to_database(news_list, postgres_api)
     
     # Task dependencies
