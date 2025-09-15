@@ -26,7 +26,7 @@ from include.my_etl_module import (
 # Define the basic parameters of the DAG, like schedule and start_date
 @dag(
     dag_id="Fetch News",
-    start_date=datetime(2025, 4, 22),
+    start_date=pendulum.datetime(2025, 4, 22),
     schedule="0 0 * * *",
     default_args={"owner": "Harsh Bari", "retries": 3},
     catchup=False,
@@ -65,4 +65,5 @@ def start_etl():
 
 # Initiate ETL
 start_etl()
+
 
