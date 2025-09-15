@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 import google.generativeai as genai
 import json
 import psycopg2
-import os
 from psycopg2.extras import execute_values
 
 from airflow.models.dag import DAG
