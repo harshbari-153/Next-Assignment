@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pendulum
+import os # Import the os module
 
 from airflow.models.dag import DAG
-from airflow.operators.python import PythonOperator
 from airflow.decorators import task
 
 from include.my_etl_module import (
@@ -27,10 +27,9 @@ with DAG(
         Extracts news headlines and URLs, then adds body content and metadata.
         This single task combines multiple steps for better performance and data passing.
         """
-        from airflow.models.variable import Variable
-        
-        gnews_api = Variable.get("GNews_API")
-        gemini_api = Variable.get("Gemini_API")
+        # Read the environment variables using os.environ
+        gnews_api = os.environ.get("GNews_API")
+        gemini_api = os.environ.get("Gemini_API")
         
         news_list = find_latest_headline_and_url(gnews_api)
         news_list = get_body(news_list)
@@ -43,9 +42,8 @@ with DAG(
         """
         Loads the processed news data into the database.
         """
-        from airflow.models.variable import Variable
-        
-        postgres_api = Variable.get("PostgreSQL_API")
+        # Read the environment variable for the database connection URI
+        postgres_api = os.environ.get("PostgreSQL_API")
         add_to_database(news_list, postgres_api)
     
     # Task dependencies
