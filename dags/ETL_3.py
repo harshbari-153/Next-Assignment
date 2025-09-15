@@ -3,6 +3,13 @@ from __future__ import annotations
 import pendulum
 import os # Import the os module
 from dotenv import load_dotenv
+import requests
+from bs4 import BeautifulSoup
+import google.generativeai as genai
+import json
+import psycopg2
+import os
+from psycopg2.extras import execute_values
 
 from airflow.models.dag import DAG
 from airflow.decorators import task
