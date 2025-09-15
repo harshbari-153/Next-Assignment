@@ -1,8 +1,19 @@
 from __future__ import annotations
-import os
-import pendulum
 
-from airflow.decorators import dag, task  # FIXED import
+import requests
+from bs4 import BeautifulSoup
+import google.generativeai as genai
+import json
+import psycopg2
+from psycopg2.extras import execute_values
+
+import pendulum
+import os # Import the os module
+from dotenv import load_dotenv
+
+from airflow.models.dag import DAG
+from airflow.decorators import task, dag
+
 
 from include.my_etl_module import (
     find_latest_headline_and_url,
@@ -10,6 +21,7 @@ from include.my_etl_module import (
     get_metadata,
     add_to_database,
 )
+
 
 @dag(
     dag_id="fetch_news",   # FIXED (no spaces)
