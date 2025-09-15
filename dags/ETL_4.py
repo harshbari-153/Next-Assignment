@@ -51,9 +51,9 @@ def start_etl():
         add_to_database(news_list, db_url)
 
     # ✅ Use consistent env variable names
-    gnews_api = os.getenv("GNEWS_API_KEY")
-    gemini_api = os.getenv("GEMINI_API_KEY")
-    postgres_url = os.getenv("DATABASE_URL")
+    gnews_api = os.getenv("GNEWS_API")
+    gemini_api = os.getenv("GEMINI_API")
+    postgres_url = os.getenv("POSTGRESQL_API")
 
     # ✅ Chain tasks properly
     news_list = task_1(gnews_api)
@@ -63,3 +63,4 @@ def start_etl():
 
 # ✅ Instantiate DAG so Airflow can discover it
 dag = start_etl()
+
