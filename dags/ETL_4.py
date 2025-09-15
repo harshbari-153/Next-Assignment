@@ -15,6 +15,7 @@ from airflow.models.dag import DAG
 from airflow.decorators import task
 from airflow.sdk import Asset, dag, task
 
+
 from include.my_etl_module import (
     find_latest_headline_and_url,
     get_body,
@@ -22,40 +23,45 @@ from include.my_etl_module import (
     add_to_database,
 )
 
-with DAG(
-    dag_id="etl_pipeline_3",
-    start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
-    schedule="0 0 * * *",
-    default_args={"owner": "Harsh Bari", "retries": 3},
-    catchup=False,
-    tags=["ETL", "news"],
-) as dag:
-    
-    @task
-    def extract_and_transform():
-        """
-        Extracts news headlines and URLs, then adds body content and metadata.
-        This single task combines multiple steps for better performance and data passing.
-        """
-        # Read the environment variables using os.environ
-        gnews_api = os.environ.get("GNews_API")
-        gemini_api = os.environ.get("Gemini_API")
-        
-        news_list = find_latest_headline_and_url(gnews_api)
-        news_list = get_body(news_list)
-        news_list = get_metadata(news_list, gemini_api)
-        
-        return news_list
-        
-    @task
-    def load_to_database(news_list):
-        """
-        Loads the processed news data into the database.
-        """
-        # Read the environment variable for the database connection URI
-        postgres_api = os.environ.get("PostgreSQL_API")
-        add_to_database(news_list, postgres_api)
-    
-    # Task dependencies
-    processed_data = extract_and_transform()
-    load_to_database(processed_data)
+# Define the basic parameters of the DAG, like schedule and start_date
+@dag(
+    dag_id="Fetch News",
+    start_date=datetime(2025, 4, 22),
+    schedule="@daily",
+    doc_md=__doc__,
+    default_args={"owner": "Astro", "retries": 3},
+    tags=["example"],
+)
+
+def start_etl():
+
+  @task
+  def task_1(api):
+    return find_latest_headline_and_url(api)
+
+  @task
+  def task_2(news_list):
+    return get_body(news_list)
+
+  @task
+  def task_3(news_list, api):
+    return get_metadata(news_list, api)
+
+  @task
+  def task_4(news_list, api):
+    add_to_database(news_list, api)
+
+
+  # fetch variables
+  gnews_api = os.environ.get("GNEWS_API")
+  gemini_api = os.environ.get("GEMINI_API")
+  postgres_api = os.environ.get("POSTGRESQL_API")
+
+  news_list = task_1(gnews_api)
+  news_list_2 = task_2(news_list)
+  news_list_3 = task_3(news_2, gemini_api)
+  task_4(news_list_3, postgres_api)
+
+
+# Initiate ETL
+start_etl()
