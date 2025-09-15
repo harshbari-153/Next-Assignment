@@ -2,7 +2,6 @@
 .env
 .DS_Store
 __pycache__/
-airflow_settings.yaml
 astro
 .venv
 airflow-webserver.pid
