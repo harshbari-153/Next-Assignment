@@ -3,8 +3,8 @@ from __future__ import annotations
 import pendulum
 import os # Import the os module
 
-from airflow.models.dag import DAG
-from airflow.decorators import task
+# Use the modern Airflow decorators
+from airflow.decorators import dag, task
 
 from include.my_etl_module import (
     find_latest_headline_and_url,
@@ -13,24 +13,26 @@ from include.my_etl_module import (
     add_to_database,
 )
 
-with DAG(
+# Use the @dag decorator to define your DAG
+@dag(
     dag_id="etl_pipeline_3",
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
     schedule="0 0 * * *",
     catchup=False,
     tags=["ETL", "news"],
-) as dag:
+)
+def etl_pipeline_3():
     
     @task
     def extract_and_transform():
         """
         Extracts news headlines and URLs, then adds body content and metadata.
-        This single task combines multiple steps for better performance and data passing.
         """
-        # Read the environment variables using os.environ
+        # Read the environment variables using os.environ.get()
         gnews_api = os.environ.get("GNews_API")
         gemini_api = os.environ.get("Gemini_API")
         
+        # Pass the API keys to your functions
         news_list = find_latest_headline_and_url(gnews_api)
         news_list = get_body(news_list)
         news_list = get_metadata(news_list, gemini_api)
@@ -46,6 +48,9 @@ with DAG(
         postgres_api = os.environ.get("PostgreSQL_API")
         add_to_database(news_list, postgres_api)
     
-    # Task dependencies
+    # Define dependencies by calling the functions like a normal Python pipeline
     processed_data = extract_and_transform()
     load_to_database(processed_data)
+
+# Call the DAG function to instantiate it
+etl_pipeline_3()
