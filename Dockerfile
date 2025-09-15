@@ -1,4 +1,3 @@
-FROM astrocrpublic.azurecr.io/runtime:3.0-10
 # Start with a base Airflow image from Astronomer
 FROM quay.io/astronomer/astro-runtime:latest
 
