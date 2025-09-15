@@ -59,9 +59,10 @@ def start_etl():
 
   news_list = task_1(gnews_api)
   news_list_2 = task_2(news_list)
-  news_list_3 = task_3(news_2, gemini_api)
+  news_list_3 = task_3(news_list_2, gemini_api)
   task_4(news_list_3, postgres_api)
 
 
 # Initiate ETL
 start_etl()
+
