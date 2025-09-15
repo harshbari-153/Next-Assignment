@@ -14,9 +14,16 @@ API_KEY = os.getenv("GNEWS_API_KEY")
 GEMINI_API = os.getenv("GEMINI_API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# with DAG(
+#     dag_id="daily_news_etl",
+#     schedule="0 0 * * *",  # Daily at midnight
+#     start_date=datetime(2025, 1, 1),
+#     catchup=False
+# ) as dag:
+
 with DAG(
     dag_id="daily_news_etl",
-    schedule="0 0 * * *",  # Daily at midnight
+    schedule_interval="0 0 * * *",
     start_date=datetime(2025, 1, 1),
     catchup=False
 ) as dag:
