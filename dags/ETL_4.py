@@ -20,6 +20,16 @@ first DAG tutorial: https://www.astronomer.io/docs/learn/get-started-with-airflo
 ![Picture of the ISS](https://www.esa.int/var/esa/storage/images/esa_multimedia/images/2010/02/space_station_over_earth/10293696-3-eng-GB/Space_Station_over_Earth_card_full.jpg)
 """
 
+#################################################
+import requests
+from bs4 import BeautifulSoup
+import google.generativeai as genai
+import json
+import psycopg2
+import os
+from psycopg2.extras import execute_values
+#################################################
+
 from airflow.sdk import Asset, dag, task
 from pendulum import datetime
 import requests
