@@ -21,6 +21,7 @@ first DAG tutorial: https://www.astronomer.io/docs/learn/get-started-with-airflo
 """
 
 #################################################
+'''
 import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
@@ -28,6 +29,7 @@ import json
 import psycopg2
 import os
 from psycopg2.extras import execute_values
+'''
 #################################################
 
 from airflow.sdk import Asset, dag, task
@@ -42,7 +44,7 @@ import requests
     schedule="@daily",
     doc_md=__doc__,
     default_args={"owner": "Harsh Bari", "retries": 3},
-    tags=["example", "biscuit", "samosa"],
+    tags=["example", "biscuit", "samosa", "import"],
 )
 def example_astronauts():
     # Define tasks
