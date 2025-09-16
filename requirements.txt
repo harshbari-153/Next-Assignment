@@ -1,4 +1,3 @@
-# Astro Runtime includes the following pre-installed providers packages: https://www.astronomer.io/docs/astro/runtime-image-architecture#provider-packages
 newsapi-python
 beautifulsoup4
 google-generativeai
@@ -7,3 +6,5 @@ python-dotenv
 streamlit
 streamlit-option-menu
 google-genai
+numpy
+scikit-learn
