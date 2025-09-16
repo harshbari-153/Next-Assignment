@@ -1,317 +1,343 @@
 import streamlit as st
 import os
 import time
+import datetime
 import psycopg2
 import google.generativeai as genai
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
-import re
 
-# --- Page Configuration ---
+# --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Next Assignment",
     page_icon="📚",
     layout="centered",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="collapsed",
 )
 
-# --- Load Environment Variables ---
+# --- LOAD ENVIRONMENT VARIABLES ---
 # Load from the parent directory's .env file
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path=dotenv_path)
 
-# --- API Keys ---
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 GEMINI_API_KEYS = [
     os.getenv("Gemini_API_1"),
     os.getenv("Gemini_API_2"),
     os.getenv("Gemini_API_3"),
 ]
-POSTGRESQL_API = os.getenv("PostgreSQL_API")
 
-# --- Helper Functions ---
+# --- SESSION STATE INITIALIZATION ---
+if 'page' not in st.session_state:
+    st.session_state.page = 'home'
+if 'assignments' not in st.session_state:
+    st.session_state.assignments = None
+if 'selected_assignment_id' not in st.session_state:
+    st.session_state.selected_assignment_id = None
+if 'api_key_index' not in st.session_state:
+    st.session_state.api_key_index = 0
 
-def get_gemini_api_key():
-    """Cycles through the available Gemini API keys."""
-    if 'api_key_index' not in st.session_state:
-        st.session_state.api_key_index = 0
-    
-    key = GEMINI_API_KEYS[st.session_state.api_key_index]
-    st.session_state.api_key_index = (st.session_state.api_key_index + 1) % len(GEMINI_API_KEYS)
-    return key
+# --- STYLING ---
+st.markdown("""
+<style>
+    .stButton>button {
+        width: 100%;
+        border-radius: 50px;
+        background-color: #4F8BF9;
+        color: white;
+        border: none;
+        padding: 10px 0;
+    }
+    .stButton>button:hover {
+        background-color: #3A6DC2;
+        color: white;
+    }
+    .assignment-button {
+        text-align: left !important;
+        padding: 15px 20px !important;
+        background-color: #f0f2f6 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 10px !important;
+        color: #333 !important;
+        width: 100% !important;
+        margin-bottom: 10px !important;
+    }
+    .assignment-button:hover {
+        background-color: #e6e8eb !important;
+        border-color: #4F8BF9 !important;
+    }
+    .stTextInput>div>div>input {
+        border-radius: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-def connect_db():
+
+# --- HELPER FUNCTIONS ---
+
+def get_db_connection():
     """Establishes a connection to the PostgreSQL database."""
     try:
-        conn = psycopg2.connect(POSTGRESQL_API)
+        conn = psycopg2.connect(SUPABASE_URL)
         return conn
     except Exception as e:
         st.error(f"Database Connection Error: {e}")
         return None
 
-def get_embedding(text, model="models/embedding-001"):
-    """Generates embeddings for a given text using a specified model, with error handling."""
+def rotate_api_key():
+    """Rotates to the next Gemini API key."""
+    st.session_state.api_key_index = (st.session_state.api_key_index + 1) % len(GEMINI_API_KEYS)
+    return GEMINI_API_KEYS[st.session_state.api_key_index]
+
+def get_embedding(text):
+    """Gets embeddings for a given text using a rotating Gemini API key."""
+    time.sleep(30) # 8-second delay as requested
     try:
-        api_key = get_gemini_api_key()
+        api_key = rotate_api_key()
         genai.configure(api_key=api_key)
+        model = 'models/embedding-001'
         embedding = genai.embed_content(model=model, content=text, task_type="RETRIEVAL_DOCUMENT")
-        time.sleep(8) # 8-second delay as requested
         return embedding['embedding']
     except Exception as e:
-        st.warning(f"Embedding failed for a text snippet. Retrying with next key. Error: {e}")
-        # Simple retry logic with the next key
-        try:
-            api_key = get_gemini_api_key()
-            genai.configure(api_key=api_key)
-            embedding = genai.embed_content(model=model, content=text, task_type="RETRIEVAL_DOCUMENT")
-            time.sleep(8)
-            return embedding['embedding']
-        except Exception as e2:
-            st.error(f"Fatal Error during embedding: {e2}. Could not process the request.")
-            return None
+        st.warning(f"Embedding failed for a record, skipping. Error: {e}")
+        return None
 
-def generate_assignment_from_gemini(prompt_data):
-    """Generates assignment content using Gemini Pro, with robust parsing."""
+def cosine_similarity(vec1, vec2):
+    """Calculates cosine similarity between two vectors."""
+    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+def parse_assignment_response(response_text):
+    """Parses the generated assignment text into structured parts."""
     try:
-        api_key = get_gemini_api_key()
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        headline = response_text.split("Assignment Headline:")[1].split("Assignment Overview:")[0].strip()
+        overview = response_text.split("Assignment Overview:")[1].split("Assignment Instructions:")[0].strip()
+        instructions = response_text.split("Assignment Instructions:")[1].strip()
+        return headline, overview, instructions
+    except IndexError:
+        # Fallback if the model doesn't follow the format strictly
+        return "Could not parse headline.", "Could not parse overview.", response_text
+
+# --- CORE LOGIC ---
+
+def find_assignments(user_subject, skill_1, skill_2, skill_3):
+    """The main function to perform all steps from data fetching to assignment generation."""
+    start_time = time.time()
+    status_container = st.empty()
+    progress_bar = st.progress(0)
+    timer_container = st.empty()
+
+    try:
+        # --- STEP 1: Fetch initial data from Database ---
+        status_container.info("⏳ Step 1/6: Fetching records from database...")
+        timer_container.caption(f"Elapsed Time: 0s")
+        conn = get_db_connection()
+        if not conn: return
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, url, news_type, key_1, key_2, key_3 FROM news_db;")
+            records = cur.fetchall()
+        conn.close()
+        progress_bar.progress(5)
+
+        # --- STEP 2: Merge keywords ---
+        status_container.info("🔄 Step 2/6: Merging keywords...")
+        db_data = []
+        for rec in records:
+            # Ensure all parts are strings before joining
+            parts = [str(p) for p in [rec[2], rec[3], rec[4], rec[5]] if p]
+            merged_str = ", ".join(parts)
+            db_data.append({'id': rec[0], 'url': rec[1], 'str': merged_str})
+
+        user_str = f"{user_subject}, {skill_1}, {skill_2}, {skill_3}"
+        progress_bar.progress(10)
+
+        # --- STEP 3: Get Embeddings ---
+        total_items = len(db_data) + 1
+        status_container.info(f"✨ Step 3/6: Getting embeddings (0/{total_items})...")
         
-        prompt = f"""
+        for i, item in enumerate(db_data):
+            elapsed_time = str(datetime.timedelta(seconds=int(time.time() - start_time)))
+            timer_container.caption(f"Elapsed Time: {elapsed_time}")
+            status_container.info(f"✨ Step 3/6: Getting embeddings ({i+1}/{total_items})... This takes a while.")
+            
+            item['embd'] = get_embedding(item['str'])
+            progress_bar.progress(10 + int((i+1) / total_items * 40))
+
+        # Filter out items where embedding failed
+        db_data = [item for item in db_data if item.get('embd') is not None]
+        if not db_data:
+            st.error("Could not generate embeddings for any database records. Please check Gemini API keys.")
+            return
+
+        user_embd = get_embedding(user_str)
+        if not user_embd:
+            st.error("Could not generate embedding for your input. Please check Gemini API keys and try again.")
+            return
+        progress_bar.progress(50)
+
+        # --- STEP 4: Find Cosine Similarity ---
+        status_container.info("⚖️ Step 4/6: Finding cosine similarity...")
+        for item in db_data:
+            item['score'] = cosine_similarity(item['embd'], user_embd)
+
+        # Get top 3
+        top_3 = sorted(db_data, key=lambda x: x['score'], reverse=True)[:3]
+        top_3_ids = [item['id'] for item in top_3]
+        
+        if not top_3_ids:
+            st.warning("No relevant articles found to generate assignments. Try different skills or subjects.")
+            return
+            
+        progress_bar.progress(60)
+
+        # --- STEP 5: Fetch full news for top 3 ---
+        status_container.info("📰 Step 5/6: Fetching news details for top results...")
+        conn = get_db_connection()
+        if not conn: return
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, headline, news, impact, emotion FROM news_db WHERE id = ANY(%s);", (top_3_ids,))
+            news_details = cur.fetchall()
+        conn.close()
+
+        # Map details back to top_3 items
+        details_map = {rec[0]: {'headline': rec[1], 'news': rec[2], 'impact': rec[3], 'emotion': rec[4]} for rec in news_details}
+        for item in top_3:
+            item.update(details_map.get(item['id'], {}))
+        
+        progress_bar.progress(70)
+        
+        # --- STEP 6: Generate Assignments ---
+        status_container.info("🤖 Step 6/6: Generating assignments...")
+        genai.configure(api_key=rotate_api_key())
+        generation_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        
+        prompt_template = """
         You are a project generator. Your task is to create an excellent project assignment based on the provided variables.
 
         Variables:
-        headline: {prompt_data['headline']}
-        news: {prompt_data['news']}
-        impact: {prompt_data['impact']}
-        emotion: {prompt_data['emotion']}
-        subject: {prompt_data['subject']}
-        skills: {", ".join(prompt_data['skills'])}
+        headline: {headline}
+        news: {news}
+        impact: {impact}
+        emotion: {emotion}
+        subject: {subject}
+        skills: {skills}
 
         Instructions:
         1. **Integrate all variables:** The assignment must be a practical application that uses the provided `headline`, `news`, `impact`, and `emotion`.
-        2. **Focus on skills:** The project must require students to demonstrate and apply the skills within the subject context.
-        3. **Structure the output strictly:**
+        2. **Focus on skills:** The project must require students to demonstrate and apply the skills within the {subject} context.
+        3. **Structure the output strictly as shown below with the exact labels:**
            - **Assignment Headline:** A title, max 10 words.
            - **Assignment Overview:** A brief summary of the project's goal, max 20 words.
            - **Assignment Instructions:** The steps students must follow, max 40 words.
         4. **Tone:** The assignment should be relevant to emotion, and inspiring for students.
-
+        
         **Assignment Headline:**
         **Assignment Overview:**
         **Assignment Instructions:**
         """
-        
-        response = model.generate_content(prompt)
-        time.sleep(8) # 8-second delay
-        
-        # Robust parsing of the response
-        text = response.text
-        headline_match = re.search(r"Assignment Headline:(.*?)Assignment Overview:", text, re.DOTALL)
-        overview_match = re.search(r"Assignment Overview:(.*?)Assignment Instructions:", text, re.DOTALL)
-        instructions_match = re.search(r"Assignment Instructions:(.*)", text, re.DOTALL)
 
-        if headline_match and overview_match and instructions_match:
-            return {
-                "headline": headline_match.group(1).strip(),
-                "overview": overview_match.group(1).strip(),
-                "instructions": instructions_match.group(1).strip()
-            }
-        else:
-            # Fallback if regex fails
-            st.warning("Could not parse Gemini response perfectly, using fallback.")
-            parts = text.split("\n")
-            return {
-                "headline": parts[0].replace("**Assignment Headline:**", "").strip(),
-                "overview": parts[1].replace("**Assignment Overview:**", "").strip(),
-                "instructions": " ".join(parts[2:]).replace("**Assignment Instructions:**", "").strip(),
-            }
+        for i, item in enumerate(top_3):
+            elapsed_time = str(datetime.timedelta(seconds=int(time.time() - start_time)))
+            timer_container.caption(f"Elapsed Time: {elapsed_time}")
+            status_container.info(f"🤖 Step 6/6: Generating Assignment {i+1} of 3...")
+            time.sleep(30) # 8-second delay
+
+            prompt = prompt_template.format(
+                headline=item.get('headline', 'N/A'),
+                news=item.get('news', 'N/A'),
+                impact=item.get('impact', 'N/A'),
+                emotion=item.get('emotion', 'N/A'),
+                subject=user_subject,
+                skills=user_str
+            )
+            try:
+                response = generation_model.generate_content(prompt)
+                headline, overview, instructions = parse_assignment_response(response.text)
+                item['ass_headline'] = headline
+                item['ass_overview'] = overview
+                item['ass_instructions'] = instructions
+            except Exception as e:
+                item['ass_headline'] = "Error Generating Assignment"
+                item['ass_overview'] = f"An error occurred: {e}"
+                item['ass_instructions'] = "Please try again with different inputs."
+
+            progress_bar.progress(70 + int((i+1)/3 * 30))
+
+        st.session_state.assignments = top_3
+        status_container.success("✅ All assignments generated successfully!")
+        timer_container.empty()
+        progress_bar.empty()
 
     except Exception as e:
-        st.error(f"Failed to generate assignment. Error: {e}")
-        return None
+        status_container.error(f"An unexpected error occurred: {e}")
+        timer_container.empty()
+        progress_bar.empty()
 
-# --- Page Rendering Functions ---
+
+# --- UI RENDERING FUNCTIONS ---
 
 def render_home_page():
-    """Renders the main input form and results display."""
+    """Renders the main input form and results."""
     st.title("📚 Next Assignment Generator")
-    st.markdown("Enter a subject and three key skills to discover relevant project assignments based on recent news.")
+    st.caption("Enter a subject and three skills to discover relevant, real-world project assignments based on current news.")
 
-    with st.form("assignment_form"):
-        user_subject = st.text_input("Enter Subject Name", max_chars=30, key="user_subject")
-        skill_1 = st.text_input("Enter Skill 1", max_chars=30, key="skill_1")
-        skill_2 = st.text_input("Enter Skill 2", max_chars=30, key="skill_2")
-        skill_3 = st.text_input("Enter Skill 3", max_chars=30, key="skill_3")
-        submitted = st.form_submit_button("Find Assignment")
-
-    if submitted:
-        if not all([user_subject, skill_1, skill_2, skill_3]):
-            st.error("All fields are compulsory. Please fill them all out.")
-        else:
-            # --- Start the main process ---
-            st.session_state.assignments = [] # Clear old results
-            status_placeholder = st.empty()
-            progress_bar = st.progress(0)
-            timer_placeholder = st.empty()
-            start_time = time.time()
-
-            # 1. Fetching from Database
-            status_placeholder.info("Step 1/6: Fetching from Database...")
-            timer_placeholder.text("Elapsed time: 0s")
-            conn = connect_db()
-            if not conn: st.stop()
-            cur = conn.cursor()
-            cur.execute("SELECT id, url, news_type, key_1, key_2, key_3 FROM news_db;")
-            records = cur.fetchall()
-            conn.close()
-            progress_bar.progress(5)
-
-            # 2. Merging Keywords
-            status_placeholder.info("Step 2/6: Merging keywords...")
-            user_str = f"{user_subject}, {skill_1}, {skill_2}, {skill_3}"
-            db_data = []
-            for rec in records:
-                # Filter out None values before joining
-                keywords = [rec[2], rec[3], rec[4], rec[5]]
-                merged_str = ", ".join(filter(None, keywords))
-                db_data.append({
-                    "id": rec[0],
-                    "url": rec[1],
-                    "str": merged_str
-                })
-            progress_bar.progress(10)
-
-            # 3. Getting Embeddings
-            status_placeholder.info("Step 3/6: Getting Embeddings...")
-            total_items = len(db_data) + 1
-            for i, item in enumerate(db_data):
-                elapsed_time = f"{int(time.time() - start_time)}s"
-                timer_placeholder.text(f"Elapsed time: {elapsed_time}")
-                status_placeholder.info(f"Step 3/6: Getting Embeddings... ({i+1}/{total_items})")
-                item['embedding'] = get_embedding(item['str'])
-                if item['embedding'] is None:
-                    st.error("Process stopped due to a critical embedding error.")
-                    st.stop()
-                progress_bar.progress(10 + int(60 * (i + 1) / total_items))
-            
-            user_str_embd = get_embedding(user_str)
-            if user_str_embd is None:
-                st.error("Failed to process user input. Please try again.")
-                st.stop()
-            progress_bar.progress(70)
-
-            # 4. Finding Cosine Similarity
-            status_placeholder.info("Step 4/6: Finding Cosine Similarity...")
-            db_embeddings = np.array([item['embedding'] for item in db_data])
-            user_embedding = np.array(user_str_embd).reshape(1, -1)
-            similarities = cosine_similarity(user_embedding, db_embeddings)[0]
-            
-            for i, item in enumerate(db_data):
-                item['score'] = similarities[i]
-
-            # Get top 3 indices
-            top_3_indices = np.argsort(similarities)[-3:][::-1]
-            top_3_records = [db_data[i] for i in top_3_indices]
-            progress_bar.progress(75)
-
-            # 5. Fetching Full News from Database
-            status_placeholder.info("Step 5/6: Fetching News from Database...")
-            conn = connect_db()
-            if not conn: st.stop()
-            cur = conn.cursor()
-            top_ids = tuple(rec['id'] for rec in top_3_records)
-            cur.execute("SELECT id, headline, news, impact, emotion FROM news_db WHERE id IN %s;", (top_ids,))
-            news_details = cur.fetchall()
-            conn.close()
-            
-            news_map = {detail[0]: {'headline': detail[1], 'news': detail[2], 'impact': detail[3], 'emotion': detail[4]} for detail in news_details}
-            
-            for rec in top_3_records:
-                rec.update(news_map.get(rec['id'], {}))
-            progress_bar.progress(80)
-
-            # 6. Generating Assignments
-            status_placeholder.info("Step 6/6: Generating Assignments...")
-            final_assignments = []
-            for i, rec in enumerate(top_3_records):
-                status_placeholder.info(f"Step 6/6: Generating Assignment {i+1}/3...")
-                elapsed_time = f"{int(time.time() - start_time)}s"
-                timer_placeholder.text(f"Elapsed time: {elapsed_time}")
-                
-                prompt_data = {
-                    'headline': rec['headline'], 'news': rec['news'], 'impact': rec['impact'], 
-                    'emotion': rec['emotion'], 'subject': user_subject, 'skills': [skill_1, skill_2, skill_3]
-                }
-                assignment_content = generate_assignment_from_gemini(prompt_data)
-                
-                if assignment_content:
-                    rec.update({
-                        'ass_headline': assignment_content['headline'],
-                        'ass_overview': assignment_content['overview'],
-                        'ass_instructions': assignment_content['instructions'],
-                    })
-                    final_assignments.append(rec)
-                progress_bar.progress(80 + int(20 * (i + 1) / 3))
-
-            st.session_state.assignments = final_assignments
-            status_placeholder.success("🎉 All assignments generated successfully!")
-            progress_bar.empty()
-            timer_placeholder.empty()
-
-    if 'assignments' in st.session_state and st.session_state.assignments:
-        st.markdown("---")
-        st.subheader("Your Custom Assignments")
+    with st.form(key="assignment_form"):
+        user_subject = st.text_input("Enter Subject Name", max_chars=30, placeholder="e.g., Data Science")
+        skill_1 = st.text_input("Enter Skill 1", max_chars=30, placeholder="e.g., Python")
+        skill_2 = st.text_input("Enter Skill 2", max_chars=30, placeholder="e.g., NLP")
+        skill_3 = st.text_input("Enter Skill 3", max_chars=30, placeholder="e.g., Visualization")
         
-        cols = st.columns(len(st.session_state.assignments))
-        for i, assignment in enumerate(st.session_state.assignments):
-            with cols[i]:
-                with st.container(border=True):
-                    st.markdown(f"**{assignment['ass_headline']}**")
-                    if st.button("View Details", key=f"details_{i}"):
-                        st.session_state.selected_assignment_index = i
-                        st.session_state.page = "details"
-                        st.rerun()
+        submit_button = st.form_submit_button(label="Find Assignment")
+
+    if submit_button:
+        if all([user_subject, skill_1, skill_2, skill_3]):
+            st.session_state.assignments = None # Clear old results
+            find_assignments(user_subject, skill_1, skill_2, skill_3)
+        else:
+            st.warning("Please fill out all four fields.")
+
+    if st.session_state.assignments:
+        st.markdown("---")
+        st.subheader("Your Custom Assignments:")
+        for assignment in st.session_state.assignments:
+            if st.button(assignment.get('ass_headline', 'Untitled Assignment'), key=f"btn_{assignment['id']}", help="Click to see details", use_container_width=True):
+                # Using a custom class for styling is not directly supported by st.button,
+                # but we can apply global styles as done at the top.
+                # Here, we'll just handle the navigation logic.
+                st.session_state.selected_assignment_id = assignment['id']
+                st.session_state.page = 'details'
+                st.rerun()
 
 def render_details_page():
-    """Renders the details of a selected assignment."""
-    if 'selected_assignment_index' not in st.session_state:
-        st.session_state.page = "home"
-        st.rerun()
-    
-    assignment = st.session_state.assignments[st.session_state.selected_assignment_index]
-    
-    st.title("Assignment Details")
-    st.markdown("---")
+    """Renders the detailed view of a selected assignment."""
+    selected_id = st.session_state.selected_assignment_id
+    assignment = next((a for a in st.session_state.assignments if a['id'] == selected_id), None)
 
-    st.header(assignment.get('ass_headline', 'No Headline'))
-    
-    with st.container(border=True):
-        st.subheader("📋 Overview")
-        st.write(assignment.get('ass_overview', 'No overview available.'))
-
-        st.subheader("📝 Instructions")
-        st.write(assignment.get('ass_instructions', 'No instructions available.'))
+    if assignment:
+        st.title(assignment.get('ass_headline', 'Assignment Details'))
+        st.markdown("---")
         
-        st.subheader("🔗 Reference URL")
-        st.markdown(f"[Read the original news article]({assignment.get('url', '#')})")
-        
-        st.subheader("🆔 Assignment ID")
-        st.code(assignment.get('id', 'N/A'))
+        st.subheader("📌 Overview")
+        st.write(assignment.get('ass_overview', 'Not available.'))
 
-    if st.button("⬅️ Back to Home"):
-        st.session_state.page = "home"
+        st.subheader("📋 Instructions")
+        st.write(assignment.get('ass_instructions', 'Not available.'))
+        
+        st.subheader("🔗 Source URL")
+        st.write(assignment.get('url', 'Not available.'))
+
+        st.info(f"**Assignment ID:** `{assignment.get('id', 'N/A')}`")
+
+    else:
+        st.error("Could not find assignment details. Please go back.")
+
+    if st.button("⬅️ Back to All Assignments"):
+        st.session_state.page = 'home'
+        st.session_state.selected_assignment_id = None
         st.rerun()
 
 
-# --- Main App Logic ---
-
-# Initialize session state for page navigation
-if 'page' not in st.session_state:
-    st.session_state.page = 'home'
-
-# Page router
+# --- MAIN APP ROUTER ---
 if st.session_state.page == 'home':
     render_home_page()
-else:
+elif st.session_state.page == 'details':
     render_details_page()
