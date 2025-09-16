@@ -3,3 +3,7 @@ newsapi-python
 beautifulsoup4
 google-generativeai
 psycopg2-binary
+python-dotenv
+streamlit
+streamlit-option-menu
+google-genai
