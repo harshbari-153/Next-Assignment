@@ -19,17 +19,6 @@ first DAG tutorial: https://www.astronomer.io/docs/learn/get-started-with-airflo
 
 ![Picture of the ISS](https://www.esa.int/var/esa/storage/images/esa_multimedia/images/2010/02/space_station_over_earth/10293696-3-eng-GB/Space_Station_over_Earth_card_full.jpg)
 """
-#################################################
-from __future__ import annotations
-from bs4 import BeautifulSoup
-import google.generativeai as genai
-import json
-import psycopg2
-import os
-from psycopg2.extras import execute_values
-from dotenv import load_dotenv
-#################################################
-
 
 from airflow.sdk import Asset, dag, task
 from pendulum import datetime
@@ -40,11 +29,10 @@ import requests
 @dag(
     dag_id="My_News",
     start_date=datetime(2025, 4, 22),
-    # doc_md=__doc__,
-    schedule="0 0 * * *",
-    default_args={"owner": "Harsh", "retries": 3},
-    catchup=False,
-    tags=["ETL", "news"],
+    schedule="@daily",
+    doc_md=__doc__,
+    default_args={"owner": "Astro", "retries": 3},
+    tags=["example", "biscuit", "samosa"],
 )
 def example_astronauts():
     # Define tasks
