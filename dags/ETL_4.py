@@ -22,13 +22,12 @@ first DAG tutorial: https://www.astronomer.io/docs/learn/get-started-with-airflo
 
 #################################################
 
-import requests
-from bs4 import BeautifulSoup
-import google.generativeai as genai
-import json
-import psycopg2
-import os
-from psycopg2.extras import execute_values
+#from bs4 import BeautifulSoup
+#import google.generativeai as genai
+#import json
+#import psycopg2
+#import os
+#from psycopg2.extras import execute_values
 
 #################################################
 
@@ -109,3 +108,4 @@ def example_astronauts():
 
 # Instantiate the DAG
 example_astronauts()
+
