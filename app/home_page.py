@@ -43,7 +43,7 @@ h1, h2, h3 {color:#202124;}
 """, unsafe_allow_html=True)
 
 # --------- Env and keys ---------
-PG_URL = os.getenv("PostgreSQL_API_2", "").strip()
+PG_URL = os.getenv("PostgreSQL_API", "").strip()
 GEM_KEYS = list(filter(None, [
     os.getenv("Gemini_API_1", "").strip(),
     os.getenv("Gemini_API_2", "").strip(),
