@@ -31,7 +31,7 @@ import requests
     start_date=datetime(2025, 4, 22),
     schedule="@daily",
     doc_md=__doc__,
-    default_args={"owner": "Astro", "retries": 3},
+    default_args={"owner": "Harsh Bari", "retries": 3},
     tags=["example", "biscuit", "samosa"],
 )
 def example_astronauts():
