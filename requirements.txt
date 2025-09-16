@@ -4,4 +4,3 @@ beautifulsoup4
 google-generativeai
 psycopg2-binary
 python-dotenv
-bs4
