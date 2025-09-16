@@ -8,3 +8,4 @@ streamlit-option-menu
 google-genai
 numpy
 scikit-learn
+superbase
