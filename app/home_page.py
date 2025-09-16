@@ -91,7 +91,7 @@ def rotate_api_key():
 
 def get_embedding(text):
     """Gets embeddings for a given text using a rotating Gemini API key."""
-    time.sleep(30) # 8-second delay as requested
+    time.sleep(50) # 50-second delay as requested
     try:
         api_key = rotate_api_key()
         genai.configure(api_key=api_key)
@@ -239,7 +239,7 @@ def find_assignments(user_subject, skill_1, skill_2, skill_3):
             elapsed_time = str(datetime.timedelta(seconds=int(time.time() - start_time)))
             timer_container.caption(f"Elapsed Time: {elapsed_time}")
             status_container.info(f"🤖 Step 6/6: Generating Assignment {i+1} of 3...")
-            time.sleep(30) # 8-second delay
+            time.sleep(50) # 50-second delay
 
             prompt = prompt_template.format(
                 headline=item.get('headline', 'N/A'),
