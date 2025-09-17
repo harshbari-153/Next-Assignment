@@ -198,7 +198,7 @@ with st.form(key="assignment_form"):
     skill_3 = st.text_input(
         "Enter a third skill",
         max_chars=30,
-        placeholder="e.g., Visualization"
+        placeholder="e.g., Classification"
     )
     submitted = st.form_submit_button(label="🚀 Find Assignment")
 
