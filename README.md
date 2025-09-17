@@ -55,9 +55,6 @@ This is the interactive part of the application where users get their custom ass
 
 
 ---
-
-
-## 📂 Project Structure
 Next-Assignment/
 ├── .github/
 │   └── workflows/
@@ -74,8 +71,6 @@ Next-Assignment/
 ├── .env                     # File for environment variables
 ├── README.md                # You are here!
 └── requirements.txt         # Project dependencies
-
-
 ---
 
 ## ⚙️ Local Setup and Installation
