@@ -20,8 +20,8 @@ def test_model_embeddings():
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # Read inputs and expected outputs
-    input_sentences = read_input_sentences("tests/input_sentences.txt")
-    expected_embeddings = read_output_embeddings("tests/output_embeddings.txt")
+    input_sentences = read_input_sentences("input_sentences.txt")
+    expected_embeddings = read_output_embeddings("output_embeddings.txt")
 
     assert len(input_sentences) == len(expected_embeddings), \
         f"Mismatch: {len(input_sentences)} inputs vs {len(expected_embeddings)} expected embeddings"
