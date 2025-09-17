@@ -1,0 +1,199 @@
+I want to make a streamlit app of single page
+Project Name: Next Assignment
+
+# Page 1:
+The home page, first page when launch
+It must have 4 input text box (one below another), all must not take more than 30 characters and all are compulsory fields
+
+input 1:
+it must ask name of the subject
+variable name = "user_subject"
+
+input 2:
+it must ask name of the skill
+variable name = "skill_1"
+
+input 3:
+it must ask name of the skill
+variable name = "skill_2"
+
+input 4:
+it must ask name of the skill
+variable name = "skill_3"
+
+And a button at last named "Find Assignment"
+
+# When "Find Assignment" is press successfully
+step 1)
+You need to fetch these things from all records of database:
+id, url, news_type, key_1, key_2, key_3
+table name = "news_db"
+present on PostgreSQL on neon website.
+you will reach there using "Neon_Database" (it is case sensitive)
+This unique API will be given in .env file
+
+Note: if the news type is "Technical Error", then drop it.
+
+While this step is on the way, you need to show "Fetching From Database"
+
+Step 2)
+Whatever response you get from the database,
+merge "news_type" and keywords (key_1, key_2, key_3) into single string for each database record.
+For example: 
+news type = "Tech, industry"
+key_1 = "innovation"
+key_2 = "business"
+key_3 = "trending"
+Then merged keywords string must look like this "Tech, industry, innovation, business, trending"
+label it as str_1
+
+After that you need to make list of dictionaries like these: [{id_1, str_1, url_1}, {id_2, str_2, url_2}....and so on (till total number of records in database)]
+
+Also merge subject name and the 3 skills given by user.
+For example: 
+user_subject = "data science"
+skill_1 = "python"
+skill_2 = "nlp"
+skill_3 = "visualization"
+Then merged keywords string must look like this "data science, python, nlp, visualization" and name it as "user_str"
+
+While this step is on the way, you need to show "Merging keywords"
+
+step 3)
+Make use of model "all-MiniLM-L6-v2" to get embeddings of strings (str_1, str_2, ........)
+First download and then use it.
+Roughly it will give embeddings in 384d.
+
+You need to find embeddings for each sentence
+and make it as [{id_1, str_1, url_1, embd_1}, {id_2, str_2, url_2, embd_2}....and so on (till total number of records in database)]
+Suppose you have 'n' news, then here you need to find 'n+1' embeddings (for 'n' news and 1 for user input string "user_str"), Show progress for each 'n+1' successful embeddings.
+Let embeddings of "user_str" called as "user_str_embd"
+
+While this step is on the way, you need to show "Getting Embeddings".
+
+step 4)
+Find cosine similarity of all embeddings (embd_1, embd_2,.........) with "user_str_embd"
+and make it as [{id_1, str_1, url_1, embd_1, score_1}, {id_2, str_2, url_2, embd_2, score_2}....and so on (till total number of records in database)]
+
+Make use of these embeddings and find 3 ids with highest similarity scores (by cosine similarity).
+If there is a tie between 2 or three, pick any randomly.
+
+While this step is on the way, you need to show "Finding Cosine Similarity".
+
+step 5)
+Now discard all other dictionaries and only keep those 3 dictionaries with highest score.
+
+Now you need fetch {headline, news, impact, emotion} corresponding to id from the database using same database api (from same table) ("PostgreSQL_API")
+So now it will look like:
+[{id_1, str_1, url_1, embd_1, score_1, headline_1, news_1, impact_1, emption_1},
+{id_2, str_2, url_2, embd_2, score_2, headline_2, news_2, impact_2, emption_2},
+{id_3, str_3, url_3, embd_3, score_3, headline_3, news_3, impact_3, emption_3}]
+
+While this step is on the way, you need to show "Fetching News From Database"
+
+
+step 6) Now use gemini model ("gemini-2.5-flash"), with 3 Gemini APIs and get a good assignment.
+This step you will do 3 times (means 3 api calls), one for each selected news id.
+Use this prompt
+{
+You are a project generator. Your task is to create an excellent project assignment based on the provided variables.
+
+Variables:
+headline: {headline_i}
+news: {news_i}
+impact: {impact_i}
+emotion: {emotion_i}
+subject: {user_subject}
+skills: {user_str}
+
+Instructions:
+1.  **Integrate all variables:** The assignment must be a practical application that uses the provided `headline`, `news`, `impact`, and `emotion`.
+2.  **Focus on skills:** The project must require students to demonstrate and apply the {skill_1}, {skill_2}, and {skill_3} within the {user_subject} context.
+3.  **Structure the output strictly:**
+    -   **Assignment Headline:** A title, max 10 words.
+    -   **Assignment Overview:** A brief summary of the project's goal, max 20 words.
+    -   **Assignment Instructions:** The steps students must follow, max 40 words.
+4.  **Tone:** The assignment should be relevant to emotion, and inspiring for students.
+
+**Assignment Headline:**
+**Assignment Overview:**
+**Assignment Instructions:**
+}
+Note: 'i' used in headline_i, news_i, impact_i and emotion_i is variable from (1, 2, 3) which are 3 selected news.
+
+So now it should look like:
+[{id_1, str_1, url_1, embd_1, score_1, headline_1, news_1, impact_1, emption_1, ass_headline_1, ass_overview_1, ass_instructions_1},
+{id_2, str_2, url_2, embd_2, score_2, headline_2, news_2, impact_2, emption_2, ass_headline_2, ass_overview_2, ass_instructions_2},
+{id_3, str_3, url_3, embd_3, score_3, headline_3, news_3, impact_3, emption_3, ass_headline_3, ass_overview_3, ass_instructions_3}]
+
+While this step is on the way, you need to show "Generating Assignment 1, 2, 3" (3 times)
+
+step 7)
+After getting all 3 assignments successfully, just display these assignments headline below the submit button.
+
+if user tap on it, they must be directed to page 2. Detailed overview (this includes id, url, ass_headline, ass_overview, ass_instructions) of assignment must be shown on page 2.
+
+From Step 1 to Step 7, Make good looking progress bar and spinning wheel (both) and show the relevant background processes (which shows that the process is running and not paused).
+
+step 8)
+After getting the assignments, you need to download image from the 'url' of each assignment.
+Just go to that url, fetch first image (whatever you get) from the url.
+If there are no image, put any blank image or default image whatever you feel (but dont generate image, i dont want you to do more processing, just do whatever is quick).
+
+While this step is on the way, you need to show "Fetching From Database"
+
+# Assignment Presentation
+After all steps are completed, you need to show the 3 assignments below "Find Assignment" Button one below another in blocks/sections at same page.
+First assignment headline (in big and bold)
+Then its image (make headline as caption, it should be news headline which you had in your dictionary, not assignment which gemini just generated)
+Then its overview
+Then its instructions
+At end write "For detailed news, visit: {url}" (use url from that the list)
+
+Only when user taps on "Find Assignment" button (that too successfully), only then new data must come and older must be erased.
+
+
+# Project Structure
+There is main folder named "Next Assignment"
+Inside it has a folder called "app", inside this app folder, i need those python files (streamlit file)
+Inside "Next Assignment" folder I have requirements and .env file.
+
+# Requirements.txt
+sentence-transformers
+numpy
+beautifulsoup4
+google-generativeai
+python-dotenv
+streamlit
+psycopg2
+psycopg2-binary
+
+# .env file
+Neon_Database=postgresql://neondb_owner:npg_vex7XXXXXXXXXXp-divine-forest-a18ha0cl-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+GNews_API=530ba0c3c15848af45XXXXXXXXXX701e
+Gemini_API_1=AIzaSyCGyNmQt-oAT46RXXXXXXXXXX3tfEtNBE8
+Gemini_API_2=AIzaSyD7usP-8j1tQnwWTr1vAXXXXXXXXXX8lYU
+Gemini_API_3=AIzaSyBbDDahemlso6dcR9M_XXXXXXXXXX0uDhc
+
+# Extra instructions
+Make a little bit styling (light weight design).
+Database is already created and present at proper place (Neon Website in PostgreSQL). All attribute and table name has same column name as given here.
+Make a 5 second of delay between 2 consecutive API calls.
+
+Make sure there are no errors, name of the file must be "home_page.py"
+
+
+
+# Most Common issues
+1) getting error from Gemini API and Neon Database connection.
+2) Every time it is being stuck at same point (Gemini API Call).
+3) Most common errors are: "Gemini Parse Error", "Gemini Failure", "Gemini Runtime out", "Gemini output not in proper format", "Malformed Response", "all records getting 0 score", "StreamlitAPIException".
+4) At once it is running properly, but when i press "Find Assignment" for second time, it is showing me that connection to the database is already closed.
+But it works fine when i restart the app.
+
+
+# Note:
+I have given you 3 api for gemini, use it in alternate form (first 1 then 2 then 3 and then start from 1), no 2 API calls must be from consecutive API key.
+For testing purpose i will be running it from "app" folder in cmd like this "streamlit run home_page.py"
+Final deployment must is on online streamlit cloud (so it must not happen that locally its working but online its giving error), so code accordingly.
+If the news is less than 3, then its ok, not necessary to get 3 news.

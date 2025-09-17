@@ -1,5 +1,17 @@
+#################################################
+import os
+import requests
+from bs4 import BeautifulSoup
+import google.generativeai as genai
+import json
+from dotenv import load_dotenv
+import psycopg2
+from psycopg2.extras import execute_values
+from urllib.parse import urlparse
+import datetime
+#################################################
 
-#from dotenv import load_dotenv
+
 
 #################################################
 def find_latest_headline_and_url(API: str):
@@ -29,6 +41,7 @@ def find_latest_headline_and_url(API: str):
 
     return result
 #################################################
+
 
 
 #################################################
@@ -146,88 +159,84 @@ Text to summarize:
 
 #################################################
 def add_to_database(news_list, database_url: str):
+    # Step 1: Remove the "body" key from all dictionaries
+    cleaned_news = [{k: v for k, v in news.items() if k != "body"} for news in news_list]
 
-    # Remove 'body' from each news item (not needed in DB)
-    for news in news_list:
-         news.pop("body", None)
+    # Parse connection string (optional, just for clarity)
+    parsed_url = urlparse(database_url)
+    
+    # Step 2: Connect to PostgreSQL
+    conn = psycopg2.connect(database_url)
+    cursor = conn.cursor()
 
-    # Extract column names from first dictionary
-    columns = news_list[0].keys()
-    column_names = ', '.join(columns)
-    placeholders = ', '.join(['%s'] * len(columns))
+    # Prepare columns and values for insertion
+    if not cleaned_news:
+        return  # Nothing to insert
 
-    # Convert list of dicts into list of tuples (ordered by columns)
-    values = [tuple(news[col] for col in columns) for news in news_list]
+    columns = cleaned_news[0].keys()
+    values = [[news[col] for col in columns] for news in cleaned_news]
 
+    insert_query = f"""
+        INSERT INTO news_db ({', '.join(columns)})
+        VALUES %s
+    """
 
     try:
-        # Connect to Supabase
-        conn = psycopg2.connect(database_url)
-        cursor = conn.cursor()
-
-        # Insert all news items in one query
-        insert_query = f"INSERT INTO news_db ({column_names}) VALUES %s"
+        # Insert all cleaned records
         execute_values(cursor, insert_query, values)
 
-        # Delete oldest records if count > 30
-        while True:
-            cursor.execute("SELECT COUNT(*) FROM news_db")
-            count = cursor.fetchone()[0]
+        # Step 3: Check total number of records
+        cursor.execute("SELECT id, timestamp FROM news_db ORDER BY timestamp ASC")
+        records = cursor.fetchall()
 
-            if count <= 30:
-                break
+        if len(records) > 10:
+            # Delete 5 oldest
+            oldest_ids = [record[0] for record in records[:5]]
+            delete_query = "DELETE FROM news_db WHERE id = ANY(%s)"
+            cursor.execute(delete_query, (oldest_ids,))
 
-            # Delete the oldest record based on timestamp
-            cursor.execute("""
-                DELETE FROM news_db
-                WHERE ctid IN (
-                    SELECT ctid FROM news_db
-                    ORDER BY timestamp ASC
-                    LIMIT 1
-                )
-            """)
-
-        # Commit changes and close
+        # Commit all changes
         conn.commit()
-        cursor.close()
-        conn.close()
 
     except Exception as e:
-        print(f"Database error: {e}")
+        conn.rollback()
+        raise Exception(f"Database operation failed: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
 #################################################
 
 
 
 
 #################### Testing ####################
-'''
-# Specify the path to your .env file
-dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-load_dotenv(dotenv_path)
+
+load_dotenv()
 
 GNews_API = os.getenv("GNews_API")
-Gemini_API = os.getenv("Gemini_API")
-PostgreSQL_API = os.getenv("PostgreSQL_API")
+Gemini_API = os.getenv("Gemini_API_4")
+PostgreSQL_API = os.getenv("Neon_Database")
 
 
 ans_1 = find_latest_headline_and_url(GNews_API)
-with open("latest_news_1.txt", "w", encoding="utf-8") as f:
-    f.write(str(ans_1))
-print("News Fetched")
+# with open("latest_news_1.txt", "w", encoding="utf-8") as f:
+#     f.write(str(ans_1))
+# print("News Fetched")
 
 
 ans_2 = get_body(ans_1)
-with open("latest_news_2.txt", "w", encoding="utf-8") as f:
-    f.write(str(ans_2))
-print("Content Fetched")
+# with open("latest_news_2.txt", "w", encoding="utf-8") as f:
+#     f.write(str(ans_2))
+# print("Content Fetched")
 
 
 ans_3 = get_metadata(ans_2, Gemini_API)
-with open("latest_news_3.txt", "w", encoding="utf-8") as f:
-    f.write(str(ans_3))
-print("Meta Data Fetched")
+# with open("latest_news_3.txt", "w", encoding="utf-8") as f:
+#     f.write(str(ans_3))
+# print("Meta Data Fetched")
 
 add_to_database(ans_3, PostgreSQL_API)
-print("Inserted to database")
-'''
+# print("Inserted to database")
+
 #################################################

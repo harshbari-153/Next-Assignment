@@ -1,11 +1,7 @@
-newsapi-python
+sentence-transformers
+numpy
 beautifulsoup4
 google-generativeai
-psycopg2-binary
 python-dotenv
 streamlit
-streamlit-option-menu
-google-genai
-numpy
-scikit-learn
-sentence-transformers
+psycopg2-binary
