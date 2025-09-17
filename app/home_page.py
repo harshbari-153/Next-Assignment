@@ -266,9 +266,9 @@ if submitted:
                     
                     # Step 6: Generate Assignments with Gemini
                     gemini_apis = [
-                        os.getenv("Gemini_API_1"),
-                        os.getenv("Gemini_API_2"),
-                        os.getenv("Gemini_API_3")
+                        os.getenv("GEMINI_API_1"),
+                        os.getenv("GEMINI_API_2"),
+                        os.getenv("GEMINI_API_3")
                     ]
                     
                     for i, article in enumerate(top_articles):
