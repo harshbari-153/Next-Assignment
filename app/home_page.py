@@ -178,6 +178,14 @@ if 'assignments' not in st.session_state:
 if 'gemini_key_index' not in st.session_state:
     st.session_state.gemini_key_index = 0
 
+st.markdown("""
+    <style>
+    input {
+        color: black !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Create a form for user inputs
 with st.form(key="assignment_form"):
     user_subject = st.text_input(
