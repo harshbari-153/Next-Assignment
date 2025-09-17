@@ -88,7 +88,7 @@ model = load_sentence_model()
 def get_db_connection():
     """Establishes and returns a new database connection."""
     try:
-        connection = psycopg2.connect(os.environ["Neon_Database"])
+        connection = psycopg2.connect(os.environ["NEON_DATABASE"])
         return connection
     except psycopg2.OperationalError as e:
         st.error(f"🚨 Database Connection Error: Could not connect to the database. Please check credentials. Details: {e}")
