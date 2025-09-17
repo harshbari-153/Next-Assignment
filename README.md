@@ -53,24 +53,6 @@ This is the interactive part of the application where users get their custom ass
 * **CI/CD & Automation**: GitHub Actions
 * **Testing**: Pytest
 
-
----
-Next-Assignment/
-├── .github/
-│   └── workflows/
-│       ├── etl_daily.yaml       # Daily ETL job scheduler
-│       └── run-tests.yaml       # CI for tests and setup on commit
-├── app/
-│   └── home_page.py         # Main Streamlit application
-├── etl/
-│   └── etl.py               # The ETL script
-├── tests/
-│   ├── test_stransformer.py # Unit tests for the embedding model
-│   ├── input_sentences.txt  # Sample data for tests
-│   └── output_embeddings.txt # Expected embeddings for tests
-├── .env                     # File for environment variables
-├── README.md                # You are here!
-└── requirements.txt         # Project dependencies
 ---
 
 ## ⚙️ Local Setup and Installation
