@@ -27,6 +27,6 @@ jobs:
         env:
           GNEWS_API: ${{ secrets.GNEWS_API }}
           GEMINI_API: ${{ secrets.GEMINI_API_4 }}
-          POSTGRESQL_API: ${{ secrets.NEON_DATABASE }}
+          NEON_DATABASE: ${{ secrets.NEON_DATABASE }}
         run: |
           python etl/etl.py
