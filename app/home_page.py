@@ -298,8 +298,8 @@ if submitted:
                         2. **Focus on skills:** The project must require students to demonstrate and apply the skills {skill_1}, {skill_2}, and {skill_3} within the {user_subject} context.
                         3. **Structure the output strictly:**
                         - **Assignment Headline:** A title, max 10 words.
-                        - **Assignment Overview:** A brief summary of the project's goal, max 20 words.
-                        - **Assignment Instructions:** The steps students must follow, max 40 words.
+                        - **Assignment Overview:** A brief summary of the project's goal, max 30 words.
+                        - **Assignment Instructions:** The steps students must follow, max 60 words.
                         4. **Tone:** The assignment should be relevant to the emotion: '{article.get('emotion')}', and inspiring for students.
 
                         **Assignment Headline:**
