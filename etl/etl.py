@@ -215,7 +215,7 @@ def add_to_database(news_list, database_url: str):
 load_dotenv()
 
 GNews_API = os.getenv("GNEWS_API")
-Gemini_API = os.getenv("GEMINI_API_4")
+Gemini_API = os.getenv("GEMINI_API")
 PostgreSQL_API = os.getenv("NEON_DATABASE")
 
 
