@@ -1,10 +1,13 @@
-# Next Assignment 🚀
+# Next Assignment 📚
 
 [![GitHub Actions CI](https://github.com/harshbari-153/Next-Assignment/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/harshbari-153/Next-Assignment/actions/workflows/run-tests.yaml)
 [![GitHub Actions ETL](https://github.com/harshbari-153/Next-Assignment/actions/workflows/etl_daily.yaml/badge.svg)](https://github.com/harshbari-153/Next-Assignment/actions/workflows/etl_daily.yaml)
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://next-assignment.streamlit.app/)
 
 Next Assignment transforms trending Indian news into practical, real-world coding assignments. It's designed for learners and professionals who want to apply their technical skills to current events, moving beyond generic textbook problems.
+
+<a href="https://drive.google.com/file/d/14lLT0SGEf3hqdU98zH8t8KR5dGPD6KuM/view?usp=drive_link" target="_blank"><img src="https://img.shields.io/badge/Watch_the_Demo-informational?style=for-the-badge&logo=youtube&color=FF0000" alt="Project Demo Video"/></a>
+
 
 ---
 
