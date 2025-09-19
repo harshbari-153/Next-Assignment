@@ -52,9 +52,8 @@ This is the interactive part of the application where users get their custom ass
 * **Frontend**: Streamlit
 * **Database**: PostgreSQL (on Neon)
 * **AI/LLMs**: Google Gemini (`gemini-2.5-flash`), Sentence Transformers (`all-MiniLM-L6-v2`)
-* **APIs**: GNews API
+* **APIs**: GNews API, Gemini, Neon (`PostgreSQL`)
 * **CI/CD & Automation**: GitHub Actions
-* **Testing**: Pytest
 
 ---
 
