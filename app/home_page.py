@@ -144,7 +144,7 @@ def get_gemini_assignment(api_key, prompt):
     """Calls the Gemini API to generate an assignment and handles potential errors."""
     try:
         genai.configure(api_key=api_key)
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash-002') # Updated model name
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash') # Updated model name
         response = gemini_model.generate_content(prompt)
         
         # Simple parsing of the response based on the requested format
