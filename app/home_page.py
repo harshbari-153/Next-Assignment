@@ -318,7 +318,7 @@ if submitted:
                         
                         # Delay between API calls
                         if i < top_n - 1:
-                            time.sleep(5)
+                            time.sleep(15)
 
             status.update(label="✅ All steps completed!", state="complete", expanded=False)
             
